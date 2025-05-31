@@ -38,7 +38,7 @@ def predict():
                 'bbox': xyxy
             })
         
-        return send_file(f'runs/detect/predict/{image_path}', mimetype='image/jpeg')
+        return send_file(f'runs/detect/predict/temp_{os.path.splitext(image.filename)[0]}.jpg', mimetype='image/jpeg')
     
     finally:
         os.remove(image_path)
