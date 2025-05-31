@@ -2,13 +2,17 @@
 
 ## 📦 Backend (Flask)
 
+# Masuk ke folder backend
+
+cd ai
+
 # Install dependencies
 
 pip install requirements.txt
 
 # Jalankan server
 
-python app.py
+python predict.py
 
 ## 📦 Fonrtend (NuxtJS)
 

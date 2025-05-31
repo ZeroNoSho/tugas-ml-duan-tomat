@@ -3,7 +3,7 @@
     <div
       class="w-[600px] m-auto relative border border-gray-300 bg-gray-100 rounded-lg"
     >
-      <!-- Preview Gambar -->
+      <!-- Preview Gambar Upload -->
       <div
         class="relative order-first min-h-[350px] md:order-last h-28 md:h-auto flex justify-center items-center border border-dashed border-gray-400 col-span-2 m-2 rounded-lg bg-no-repeat bg-center bg-origin-padding bg-cover"
         :style="imagePreview ? `background-image: url(${imagePreview})` : ''"
@@ -26,12 +26,12 @@
         </span>
       </div>
 
-      <!-- Tombol Upload & Remove -->
       <div
         class="rounded-l-lg p-4 bg-gray-200 flex flex-col justify-center items-center border-0 border-r border-gray-300"
       >
         <label
-          class="cursor-pointer hover:opacity-80 inline-flex items-center shadow-md my-2 px-2 py-2 bg-gray-900 text-gray-50 border border-transparent rounded-md font-semibold text-xs uppercase tracking-widest hover:bg-gray-700 active:bg-gray-900 focus:outline-none focus:border-gray-900 focus:ring ring-gray-300 disabled:opacity-25 transition ease-in-out duration-150"
+          v-if="imagePreview === null"
+          class="cursor-pointer hover:opacity-80 inline-flex items-center shadow-md my-2 px-2 py-2 bg-gray-900 text-gray-50 rounded-md font-semibold text-xs uppercase tracking-widest hover:bg-gray-700"
         >
           Select image
           <input
@@ -44,11 +44,36 @@
         </label>
 
         <button
+          v-if="imagePreview !== null"
+          @click="submitImage"
+          class="cursor-pointer hover:opacity-80 inline-flex items-center shadow-md my-2 px-2 py-2 bg-gray-900 text-gray-50 rounded-md font-semibold text-xs uppercase tracking-widest hover:bg-gray-700"
+        >
+          Submit Image
+        </button>
+
+        <button
           @click="removeImage"
-          class="inline-flex items-center shadow-md my-2 px-2 py-2 bg-gray-900 text-gray-50 border border-transparent rounded-md font-semibold text-xs uppercase tracking-widest hover:bg-gray-700 active:bg-gray-900 focus:outline-none focus:border-gray-900 focus:ring ring-gray-300 disabled:opacity-25 transition ease-in-out duration-150"
+          class="inline-flex items-center shadow-md my-2 px-2 py-2 bg-gray-900 text-gray-50 rounded-md font-semibold text-xs uppercase tracking-widest hover:bg-gray-700"
         >
           Remove image
         </button>
+      </div>
+    </div>
+
+    <!-- Modal menampilkan gambar hasil response -->
+    <div
+      v-if="showModal"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    >
+      <div class="bg-white rounded-lg p-4 shadow-lg max-w-md w-full relative">
+        <button
+          class="absolute top-2 right-2 text-gray-600 text-xl"
+          @click="showModal = false"
+        >
+          ✕
+        </button>
+        <h2 class="text-lg font-semibold mb-4">Result Image</h2>
+        <img :src="resultImage" alt="Result" class="w-full rounded" />
       </div>
     </div>
   </div>
@@ -56,12 +81,17 @@
 
 <script setup>
 import { ref } from "vue";
+import axios from "axios";
 
 const imagePreview = ref(null);
+const selectedImage = ref(null);
+const showModal = ref(false);
+const resultImage = ref(null);
 
 const onFileChange = (e) => {
   const file = e.target.files[0];
   if (file && file.type.startsWith("image/")) {
+    selectedImage.value = file;
     const reader = new FileReader();
     reader.onload = () => {
       imagePreview.value = reader.result;
@@ -72,6 +102,38 @@ const onFileChange = (e) => {
 
 const removeImage = () => {
   imagePreview.value = null;
+  selectedImage.value = null;
   document.getElementById("restaurantImage").value = null;
+};
+
+const submitImage = async () => {
+  if (!selectedImage.value) {
+    alert("Please select an image first.");
+    return;
+  }
+  try {
+    const formData = new FormData();
+    formData.append("image", selectedImage.value);
+
+    // axios responseType blob untuk data binary gambar
+    const response = await axios.post(
+      "http://localhost:5000/predict",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        responseType: "blob", // penting!
+      }
+    );
+
+    // Buat URL dari blob
+    const imageBlob = response.data;
+    resultImage.value = URL.createObjectURL(imageBlob);
+    showModal.value = true;
+  } catch (error) {
+    console.error("API Error:", error);
+    alert("Error occurred while sending the image.");
+  }
 };
 </script>
